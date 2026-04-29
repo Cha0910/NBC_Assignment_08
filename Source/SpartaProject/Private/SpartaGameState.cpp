@@ -16,15 +16,19 @@ ASpartaGameState::ASpartaGameState()
 	Score = 0;
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
+	ItemToSpawnPerLevel = { 20, 25, 30 };
 	CurrentLevelIndex = 0;
 	MaxLevels = 3;
-	LevelGoalScores = { 1500, 3500, 6000 };
-	WaveDurations = { 60.0f, 45.0f, 30.0f };
+	LevelGoalScores = { 1500, 2500, 4000 };
+	WaveDurations = { 60.0f, 45.0f, 30.0f };	
 	CurrentWaveIndex = 0;
 	WaveSpawnCounts = { 3, 2, 1 };
 	MaxWaves = WaveDurations.Num();
 	PlatformSpawnWave = 1;
 	PoisonPlatformSpawnWave = 2;
+	PlatformSpawner = nullptr;
+	PoisonPlatformSpawner = nullptr;
+	
 }
 
 void ASpartaGameState::BeginPlay()
@@ -73,11 +77,11 @@ void ASpartaGameState::StartLevel()
 			CurrentLevelIndex = SpartaGameInstance->CurrentLevelIndex;
 		}
 	}
-	
+
 	TArray<AActor*> FoundSpawners;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlatformSpawner::StaticClass(), FoundSpawners);
 
-	for(AActor* Actor : FoundSpawners)
+	for (AActor* Actor : FoundSpawners)
 	{
 		APlatformSpawner* Spawner = Cast<APlatformSpawner>(Actor);
 
@@ -87,12 +91,13 @@ void ASpartaGameState::StartLevel()
 			PlatformSpawner->DisableSpawning();
 		}
 
-		else if(Spawner->ActorHasTag(FName("PoisonPlatform")))
+		else if (Spawner->ActorHasTag(FName("PoisonPlatform")))
 		{
 			PoisonPlatformSpawner = Spawner;
 			PoisonPlatformSpawner->DisableSpawning();
 		}
 	}
+
 
 	StartNextWave();
 }
@@ -254,7 +259,7 @@ void ASpartaGameState::SpawnItemsForWave()
 	TArray<AActor*> FoundVolumes;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
 
-	const int32 ItemToSpawn = 40;
+	int32 ItemToSpawn = ItemToSpawnPerLevel.IsValidIndex(CurrentLevelIndex) ? ItemToSpawnPerLevel[CurrentLevelIndex] : 20;
 
 	for (int32 i = 0; i < ItemToSpawn; ++i)
 	{

@@ -29,6 +29,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coin")
 	int32 CollectedCoinCount;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
+	TArray<int32> ItemToSpawnPerLevel;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Level")
 	int32 CurrentLevelIndex;
 
