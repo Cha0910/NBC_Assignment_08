@@ -7,6 +7,7 @@ USpartaGameInstance::USpartaGameInstance()
 {
 	TotalScore = 0;
 	CurrentLevelIndex = 0;
+	bIsGameOver = false;
 }
 
 void USpartaGameInstance::AddToScore(int32 ScoreToAdd)

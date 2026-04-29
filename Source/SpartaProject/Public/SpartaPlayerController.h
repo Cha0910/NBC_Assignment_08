@@ -8,6 +8,15 @@
 
 class UInputMappingContext;
 class UInputAction;
+
+UENUM(BlueprintType)
+enum class EMenuState : uint8
+{
+	Start       UMETA(DisplayName = "Start"),
+	Restart     UMETA(DisplayName = "Restart"),
+	NextLevel   UMETA(DisplayName = "NextLevel")
+};
+
 UCLASS()
 class SPARTAPROJECT_API ASpartaPlayerController : public APlayerController
 {
@@ -51,7 +60,10 @@ public:
 	void ShowGameHud();
 
 	UFUNCTION(BlueprintCallable, Category = "Menu")
-	void ShowMainMenu(bool bIsRestart);
+	void ShowMainMenu(EMenuState MenuState);
+
+	UFUNCTION(BlueprintCallable, Category = "Menu")
+	void SetMainMenuText(EMenuState MenuState);
 
 	UFUNCTION(BlueprintCallable, Category = "Menu")
 	void StartGame();

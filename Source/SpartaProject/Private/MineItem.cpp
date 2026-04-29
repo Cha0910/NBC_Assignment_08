@@ -66,10 +66,14 @@ void AMineItem::Explode()
 	if (Particle)
 	{
 		FTimerHandle EffectTimerHandle;
+		TWeakObjectPtr<UParticleSystemComponent> ParticlePtr(Particle);
 
-		GetWorld()->GetTimerManager().SetTimer(EffectTimerHandle, [Particle]()
+		GetWorld()->GetTimerManager().SetTimer(EffectTimerHandle, [ParticlePtr]()
 			{
-				Particle->DestroyComponent();
+				if (ParticlePtr.IsValid())
+				{
+					ParticlePtr->DestroyComponent();
+				}
 			}, 2.0f, false);
 	}
 }

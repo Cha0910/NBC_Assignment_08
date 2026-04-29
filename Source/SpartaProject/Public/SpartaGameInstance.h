@@ -23,6 +23,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GameData")
 	int32 CurrentLevelIndex;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GameData")
+	bool bIsGameOver;
+
 	UFUNCTION(BlueprintCallable, Category = "GameData")
 	void AddToScore(int32 ScoreToAdd);
 };

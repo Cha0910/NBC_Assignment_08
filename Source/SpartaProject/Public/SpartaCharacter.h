@@ -108,4 +108,5 @@ private:
 	float SprintSpeedMultiplier;
 	float SprintSpeed;
 	float SpeedMultiplier;
+	UFunction* DebuffFunc;
 };

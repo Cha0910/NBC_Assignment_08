@@ -18,8 +18,8 @@ ASpartaGameState::ASpartaGameState()
 	CollectedCoinCount = 0;
 	ItemToSpawnPerLevel = { 20, 25, 30 };
 	CurrentLevelIndex = 0;
-	MaxLevels = 3;
 	LevelGoalScores = { 1500, 2500, 4000 };
+	MaxLevels = LevelGoalScores.Num();
 	WaveDurations = { 60.0f, 45.0f, 30.0f };	
 	CurrentWaveIndex = 0;
 	WaveSpawnCounts = { 3, 2, 1 };
@@ -28,6 +28,7 @@ ASpartaGameState::ASpartaGameState()
 	PoisonPlatformSpawnWave = 2;
 	PlatformSpawner = nullptr;
 	PoisonPlatformSpawner = nullptr;
+	AnnouncementMessage = "";
 	
 }
 
@@ -102,6 +103,15 @@ void ASpartaGameState::StartLevel()
 	StartNextWave();
 }
 
+void ASpartaGameState::LoadNextLevel()
+{
+	if (LevelMapNames.IsValidIndex(CurrentLevelIndex))
+	{
+		UGameplayStatics::OpenLevel(GetWorld(), LevelMapNames[CurrentLevelIndex]);
+	}
+}
+
+
 void ASpartaGameState::OnWaveTimeUp()
 {
 	EndWave();
@@ -129,36 +139,30 @@ void ASpartaGameState::OnCoinCollected()
 
 void ASpartaGameState::EndLevel()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
+	UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance) return;
+
+	USpartaGameInstance* SpartaGameInstance = Cast<USpartaGameInstance>(GameInstance);
+	if (!SpartaGameInstance) return;
+
+	AddScore(Score);
+	if (SpartaGameInstance->TotalScore < (LevelGoalScores.IsValidIndex(CurrentLevelIndex) ? LevelGoalScores[CurrentLevelIndex] : 0))
 	{
-		USpartaGameInstance* SpartaGameInstance = Cast<USpartaGameInstance>(GameInstance);
-		if (SpartaGameInstance)
-		{
-			AddScore(Score);
-
-			if(SpartaGameInstance->TotalScore < (LevelGoalScores.IsValidIndex(CurrentLevelIndex) ? LevelGoalScores[CurrentLevelIndex] : 0))
-			{
-				OnGameOver();
-				return;
-			}
-
-			CurrentLevelIndex++;
-			SpartaGameInstance->CurrentLevelIndex = CurrentLevelIndex;
-			
-		}
-	}
-
-	if (CurrentLevelIndex >= MaxLevels)
-	{
+		SpartaGameInstance->bIsGameOver = true;
 		OnGameOver();
+		return;
 	}
 
-	if(LevelMapNames.IsValidIndex(CurrentLevelIndex))
+	CurrentLevelIndex++;
+	SpartaGameInstance->CurrentLevelIndex = CurrentLevelIndex;
+
+	if (LevelMapNames.IsValidIndex(CurrentLevelIndex) && (CurrentLevelIndex < MaxLevels))
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), LevelMapNames[CurrentLevelIndex]);
+		OnLevelComplete();
 	}
 	else
 	{
+		SpartaGameInstance->bIsGameOver = true;
 		OnGameOver();
 	}
 }
@@ -170,7 +174,19 @@ void ASpartaGameState::OnGameOver()
 		if (ASpartaPlayerController* SpartaPlayerController = Cast<ASpartaPlayerController>(PlayerController))
 		{
 			SpartaPlayerController->SetPause(true);
-			SpartaPlayerController->ShowMainMenu(true);
+			SpartaPlayerController->ShowMainMenu(EMenuState::Restart);
+		}
+	}
+}
+
+void ASpartaGameState::OnLevelComplete()
+{
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		if (ASpartaPlayerController* SpartaPlayerController = Cast<ASpartaPlayerController>(PlayerController))
+		{
+			SpartaPlayerController->SetPause(true);
+			SpartaPlayerController->ShowMainMenu(EMenuState::NextLevel);
 		}
 	}
 }
@@ -216,6 +232,12 @@ void ASpartaGameState::UpdateHUD()
 					int32 GoalScore = LevelGoalScores.IsValidIndex(CurrentLevelIndex) ? LevelGoalScores[CurrentLevelIndex] : 0;
 					GoalText->SetText(FText::FromString(FString::Printf(TEXT("Goal: %d"), GoalScore)));
 				}
+
+				if (UTextBlock* AnnouncementText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Announcement"))))
+				{
+					AnnouncementText->SetText(FText::FromString(AnnouncementMessage));
+					AnnouncementText->SetVisibility(AnnouncementMessage.IsEmpty() ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+				}
 			}
 		}
 	}
@@ -230,6 +252,7 @@ void ASpartaGameState::StartNextWave()
 		if(PlatformSpawner)
 		{
 			PlatformSpawner->EnableSpawning();
+			AnnouncementMessage = FString::Printf(TEXT("Wave %d: Walls are spawning!"), CurrentWaveIndex + 1);
 		}
 	}
 
@@ -238,8 +261,16 @@ void ASpartaGameState::StartNextWave()
 		if(PoisonPlatformSpawner)
 		{
 			PoisonPlatformSpawner->EnableSpawning();
+			AnnouncementMessage = FString::Printf(TEXT("Wave %d: Poison Platforms are spawning!"), CurrentWaveIndex + 1);
 		}
 	}
+
+	FTimerHandle AnnouncementTimerHandle;
+	GetWorldTimerManager().ClearTimer(AnnouncementTimerHandle);
+	GetWorldTimerManager().SetTimer(AnnouncementTimerHandle, [this]()
+	{
+		AnnouncementMessage = "";
+	}, 3.0f, false);
 
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;

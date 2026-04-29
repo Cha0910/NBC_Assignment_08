@@ -51,12 +51,20 @@ ASpartaCharacter::ASpartaCharacter()
 	DebuffsToUpdate.Add({ TEXT("Slow"), SlowTimerHandle, FLinearColor::Blue });
 	DebuffsToUpdate.Add({ TEXT("Poison"), PoisonDurationHandle, FLinearColor::Green });
 	DebuffsToUpdate.Add({ TEXT("ReverseControls"), ReverseControlsTimerHandle, FLinearColor::Red });
+
+	DebuffFunc = nullptr;
+	
 }
 
 void ASpartaCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UpdateOverheadHP();
+
+	if (UUserWidget* OverheadDebuffWidgetInstance = OverheadDebuffWidget->GetUserWidgetObject())
+	{
+		DebuffFunc = OverheadDebuffWidgetInstance->FindFunction(TEXT("UpdateDebuffs"));
+	}
 
 	GetWorldTimerManager().ClearTimer(DebuffWidgetTimerHandle);
 	GetWorldTimerManager().SetTimer(DebuffWidgetTimerHandle, this, &ASpartaCharacter::UpdateOverheadDebuffs, 0.1f, true);
@@ -215,7 +223,7 @@ void ASpartaCharacter::UpdateOverheadHP()
 
 	if (UTextBlock* HPText = Cast<UTextBlock>(OverheadWidgetInstance->GetWidgetFromName(TEXT("OverHeadHP")))) 
 	{
-		HPText->SetText(FText::FromString(FString::Printf(TEXT("HP: %.0f / %.0f"), Health, MaxHealth)));
+		HPText->SetText(FText::FromString(FString::Printf(TEXT("HP : %.0f / %.0f"), Health, MaxHealth)));
 	}
 }
 
@@ -250,8 +258,6 @@ void ASpartaCharacter::UpdateOverheadDebuffs()
 		return;
 	}
 
-	UFunction* Func = OverheadDebuffWidgetInstance->FindFunction(TEXT("UpdateDebuffs"));
-
 	for (const FDebuffData& Debuff : DebuffsToUpdate)
 	{
 		FUpdateDebuffParams Params;
@@ -267,6 +273,9 @@ void ASpartaCharacter::UpdateOverheadDebuffs()
 			Params.Percent = (Total > 0.f) ? FMath::Clamp(Remaining / Total, 0.f, 1.f) : 0.f;
 		}
 
-		OverheadDebuffWidgetInstance->ProcessEvent(Func, &Params);
+		if (DebuffFunc)
+		{
+			OverheadDebuffWidgetInstance->ProcessEvent(DebuffFunc, &Params);
+		}
 	}
 }

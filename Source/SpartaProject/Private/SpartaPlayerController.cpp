@@ -38,7 +38,7 @@ void ASpartaPlayerController::BeginPlay()
 	FString CurrentMapName = GetWorld()->GetMapName();
 	if (CurrentMapName.Contains("MenuLevel"))
 	{
-		ShowMainMenu(false);
+		ShowMainMenu(EMenuState::Start);
 	}
 }
 
@@ -47,7 +47,7 @@ UUserWidget* ASpartaPlayerController::GetHUDWidget() const
 	return HUDWidgetInstance;
 }
 
-void ASpartaPlayerController::ShowMainMenu(bool bIsRestart)
+void ASpartaPlayerController::ShowMainMenu(EMenuState MenuState)
 {
 	if (HUDWidgetInstance)
 	{
@@ -61,10 +61,10 @@ void ASpartaPlayerController::ShowMainMenu(bool bIsRestart)
 		MainMenuWidgetInstance = nullptr;
 	}
 
-	if(MainMenuWidgetClass)
+	if (MainMenuWidgetClass)
 	{
 		MainMenuWidgetInstance = CreateWidget<UUserWidget>(this, MainMenuWidgetClass);
-		if(MainMenuWidgetInstance)
+		if (MainMenuWidgetInstance)
 		{
 			MainMenuWidgetInstance->AddToViewport();
 
@@ -72,14 +72,35 @@ void ASpartaPlayerController::ShowMainMenu(bool bIsRestart)
 			SetInputMode(FInputModeUIOnly());
 		}
 
-		if(UTextBlock* ButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
+		SetMainMenuText(MenuState);
+
+		if (MenuState == EMenuState::NextLevel || MenuState == EMenuState::Restart)
+		{
+			UFunction* PlayAnimationFunc = MainMenuWidgetInstance->FindFunction(FName("PlayGameOverAnim"));
+			if (PlayAnimationFunc)
+			{
+				MainMenuWidgetInstance->ProcessEvent(PlayAnimationFunc, nullptr);
+			}
+		}
+	}
+}
+
+void ASpartaPlayerController::SetMainMenuText(EMenuState MenuState)
+{
+	if (MainMenuWidgetClass && MainMenuWidgetInstance)
+	{
+		if (UTextBlock* ButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
 		{
 			FText TitleText;
 
-			if(bIsRestart)
+			if (MenuState == EMenuState::Restart)
 			{
 				TitleText = FText::FromString(TEXT("Restart"));
-				
+
+			}
+			else if (MenuState == EMenuState::NextLevel)
+			{
+				TitleText = FText::FromString(TEXT("Next Level"));
 			}
 			else
 			{
@@ -89,17 +110,17 @@ void ASpartaPlayerController::ShowMainMenu(bool bIsRestart)
 			ButtonText->SetText(TitleText);
 		}
 
-		if (bIsRestart)
+		if (MenuState == EMenuState::NextLevel || MenuState == EMenuState::Restart)
 		{
-			UFunction* PlayAnimationFunc = MainMenuWidgetInstance->FindFunction(FName("PlayGameOverAnim"));
-			if (PlayAnimationFunc)
+			if (UTextBlock* ResultText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("GameOverText"))))
 			{
-				MainMenuWidgetInstance->ProcessEvent(PlayAnimationFunc, nullptr);
+				FText ResultTextValue = MenuState == EMenuState::Restart ? FText::FromString("Game Over") : FText::FromString("Level Complete");
+				ResultText->SetText(ResultTextValue);
 			}
 
-			if(UTextBlock* TotalScoreText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TotalScoreText"))))
+			if (UTextBlock* TotalScoreText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TotalScoreText"))))
 			{
-				if(USpartaGameInstance* SpartaGameInstance = Cast<USpartaGameInstance>(UGameplayStatics::GetGameInstance(this)))
+				if (USpartaGameInstance* SpartaGameInstance = Cast<USpartaGameInstance>(UGameplayStatics::GetGameInstance(this)))
 				{
 					TotalScoreText->SetText(FText::FromString(FString::Printf(TEXT("Total Score: %d"), SpartaGameInstance->TotalScore)));
 				}
@@ -145,11 +166,24 @@ void ASpartaPlayerController::StartGame()
 {
 	if(USpartaGameInstance* SpartaGameInstance = Cast<USpartaGameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		SpartaGameInstance->CurrentLevelIndex = 0;
-		SpartaGameInstance->TotalScore = 0;
+		if(SpartaGameInstance->bIsGameOver)
+		{
+			SpartaGameInstance->bIsGameOver = false;
+			SpartaGameInstance->CurrentLevelIndex = 0;
+			SpartaGameInstance->TotalScore = 0;
+
+			UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
+		}
+		
+		else
+		{
+			if (ASpartaGameState* SpartaGameState = GetWorld() ? GetWorld()->GetGameState<ASpartaGameState>() : nullptr)
+			{
+				SpartaGameState->LoadNextLevel();
+			}
+		}
 	}
 
-	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
 	SetPause(false);
 }
 

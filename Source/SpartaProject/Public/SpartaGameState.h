@@ -62,6 +62,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
 	int32 PoisonPlatformSpawnWave;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	FString AnnouncementMessage;
+
+	UFUNCTION(BlueprintPure, Category = "Score")
+	int32 GetScore() const;
+
 	UPROPERTY()
 	TArray<AActor*> SpawnedItems;
 
@@ -75,16 +81,18 @@ public:
 	FTimerHandle HUDUpdateTimerHandle;
 	FTimerHandle SpawnTimerHandle;
 
-	UFUNCTION(BlueprintPure, Category = "Score")
-	int32 GetScore() const;
-
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	void AddScore(int32 Points);
 
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void OnGameOver();
 
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	void OnLevelComplete();
+
 	void StartLevel();
+
+	void LoadNextLevel();
 
 	void OnWaveTimeUp();
 
