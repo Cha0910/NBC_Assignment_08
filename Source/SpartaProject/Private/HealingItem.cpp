@@ -20,6 +20,6 @@ void AHealingItem::ActivateItem(AActor* Activator)
 			PlayerCharacter->AddHealth(HealAmount);
 		}
 		
-		DestroyItem();
 	}
+	DestroyItem();
 }

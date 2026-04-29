@@ -10,6 +10,15 @@ class USpringArmComponent;
 class UWidgetComponent;
 struct FInputActionValue;
 
+struct FUpdateDebuffParams
+{
+	FName ID;
+	double Percent;
+	FLinearColor Color;
+};
+
+struct FDebuffData { FName ID; FTimerHandle& Handle; FLinearColor Color; };
+
 UCLASS()
 class SPARTAPROJECT_API ASpartaCharacter : public ACharacter
 {
@@ -27,17 +36,36 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	UWidgetComponent* OverheadWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* OverheadDebuffWidget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	float MaxHealth;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	float Health;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool bIsSprinting;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool bIsReverseControls;
+
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetHealth() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void AddHealth(float HealthAmount);
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void SetSpeedMultiplier(float NewSpeedMultiplier);
+
+	FTimerHandle SlowTimerHandle;
+	FTimerHandle PoisonTimerHandle;
+	FTimerHandle PoisonDurationHandle;
+	FTimerHandle ReverseControlsTimerHandle;
+	FTimerHandle DebuffWidgetTimerHandle;
+	
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -68,8 +96,15 @@ protected:
 
 	void UpdateOverheadHP();
 
+	void UpdateMovementSpeed();
+
+	void UpdateOverheadDebuffs();
+
+	void Tick(float DeltaTime) override;
+
 private:
 	float NormalSpeed;
 	float SprintSpeedMultiplier;
 	float SprintSpeed;
+	float SpeedMultiplier;
 };
