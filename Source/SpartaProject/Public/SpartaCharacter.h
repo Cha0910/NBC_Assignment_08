@@ -65,6 +65,7 @@ public:
 	FTimerHandle PoisonDurationHandle;
 	FTimerHandle ReverseControlsTimerHandle;
 	FTimerHandle DebuffWidgetTimerHandle;
+	TArray<FDebuffData> DebuffsToUpdate;
 	
 
 protected:

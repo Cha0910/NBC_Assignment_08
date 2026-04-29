@@ -47,6 +47,10 @@ ASpartaCharacter::ASpartaCharacter()
 	PoisonDurationHandle.Invalidate();
 	ReverseControlsTimerHandle.Invalidate();
 	DebuffWidgetTimerHandle.Invalidate();
+
+	DebuffsToUpdate.Add({ TEXT("Slow"), SlowTimerHandle, FLinearColor::Blue });
+	DebuffsToUpdate.Add({ TEXT("Poison"), PoisonDurationHandle, FLinearColor::Green });
+	DebuffsToUpdate.Add({ TEXT("ReverseControls"), ReverseControlsTimerHandle, FLinearColor::Red });
 }
 
 void ASpartaCharacter::BeginPlay()
@@ -247,12 +251,6 @@ void ASpartaCharacter::UpdateOverheadDebuffs()
 	}
 
 	UFunction* Func = OverheadDebuffWidgetInstance->FindFunction(TEXT("UpdateDebuffs"));
-
-	FDebuffData DebuffsToUpdate[] = {
-		{ TEXT("Slow"), SlowTimerHandle, FLinearColor::Blue },
-		{ TEXT("Poison"), PoisonDurationHandle, FLinearColor::Green },
-		{ TEXT("ReverseControls"), ReverseControlsTimerHandle, FLinearColor::Red }
-	};
 
 	for (const FDebuffData& Debuff : DebuffsToUpdate)
 	{

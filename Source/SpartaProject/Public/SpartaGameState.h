@@ -6,6 +6,7 @@
 #include "GameFramework/GameState.h"
 #include "SpartaGameState.generated.h"
 
+class APlatformSpawner;
 /**
  * 
  */
@@ -52,8 +53,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
 	TArray<FName> LevelMapNames;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
+	int32 PlatformSpawnWave;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
+	int32 PoisonPlatformSpawnWave;
+
 	UPROPERTY()
 	TArray<AActor*> SpawnedItems;
+
+	UPROPERTY()
+	APlatformSpawner* PlatformSpawner;
+
+	UPROPERTY()
+	APlatformSpawner* PoisonPlatformSpawner;
 
 	FTimerHandle WaveTimerHandle;
 	FTimerHandle HUDUpdateTimerHandle;

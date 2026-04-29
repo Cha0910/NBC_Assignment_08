@@ -9,6 +9,7 @@
 #include "SpartaPlayerController.h"
 #include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
+#include "PlatformSpawner.h"
 
 ASpartaGameState::ASpartaGameState()
 {
@@ -22,6 +23,8 @@ ASpartaGameState::ASpartaGameState()
 	CurrentWaveIndex = 0;
 	WaveSpawnCounts = { 3, 2, 1 };
 	MaxWaves = WaveDurations.Num();
+	PlatformSpawnWave = 1;
+	PoisonPlatformSpawnWave = 2;
 }
 
 void ASpartaGameState::BeginPlay()
@@ -68,6 +71,26 @@ void ASpartaGameState::StartLevel()
 		if (SpartaGameInstance)
 		{
 			CurrentLevelIndex = SpartaGameInstance->CurrentLevelIndex;
+		}
+	}
+	
+	TArray<AActor*> FoundSpawners;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlatformSpawner::StaticClass(), FoundSpawners);
+
+	for(AActor* Actor : FoundSpawners)
+	{
+		APlatformSpawner* Spawner = Cast<APlatformSpawner>(Actor);
+
+		if (Spawner->ActorHasTag(FName("Platform")))
+		{
+			PlatformSpawner = Spawner;
+			PlatformSpawner->DisableSpawning();
+		}
+
+		else if(Spawner->ActorHasTag(FName("PoisonPlatform")))
+		{
+			PoisonPlatformSpawner = Spawner;
+			PoisonPlatformSpawner->DisableSpawning();
 		}
 	}
 
@@ -196,6 +219,22 @@ void ASpartaGameState::UpdateHUD()
 void ASpartaGameState::StartNextWave()
 {
 	float WaveDuration = WaveDurations.IsValidIndex(CurrentWaveIndex) ? WaveDurations[CurrentWaveIndex] : 30.0f;
+
+	if(CurrentWaveIndex >= PlatformSpawnWave)
+	{
+		if(PlatformSpawner)
+		{
+			PlatformSpawner->EnableSpawning();
+		}
+	}
+
+	if(CurrentWaveIndex >= PoisonPlatformSpawnWave)
+	{
+		if(PoisonPlatformSpawner)
+		{
+			PoisonPlatformSpawner->EnableSpawning();
+		}
+	}
 
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;

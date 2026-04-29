@@ -21,26 +21,37 @@ void APoisonItem::ActivateItem(AActor* Activator)
 	{
 		if (ASpartaCharacter* PlayerCharacter = Cast<ASpartaCharacter>(Activator))
 		{
-			float Damage = PoisonDamage;
-
-			GetWorld()->GetTimerManager().ClearTimer(PlayerCharacter->PoisonTimerHandle);
-			GetWorld()->GetTimerManager().ClearTimer(PlayerCharacter->PoisonDurationHandle);
-			
-			GetWorld()->GetTimerManager().SetTimer(PlayerCharacter->PoisonTimerHandle, [PlayerCharacter, Damage]()
+			if (UWorld* World = GetWorld()) 
 			{
-				if (IsValidChecked(PlayerCharacter))
+				TWeakObjectPtr<ASpartaCharacter> PlayerPtr(PlayerCharacter);
+
+				float Damage = PoisonDamage;
+				float Duration = PoisonDuration;
+
+				World->GetTimerManager().ClearTimer(PlayerCharacter->PoisonTimerHandle);
+				World->GetTimerManager().ClearTimer(PlayerCharacter->PoisonDurationHandle);
+
+				World->GetTimerManager().SetTimer(PlayerCharacter->PoisonTimerHandle, [PlayerPtr, Damage]()
 				{
-					 UGameplayStatics::ApplyDamage(PlayerCharacter, Damage, nullptr, nullptr, UDamageType::StaticClass());
-				}
-			}, 1.0f, true);
+					if (PlayerPtr.IsValid())
+					{
+						UGameplayStatics::ApplyDamage(PlayerPtr.Get(), Damage, nullptr, nullptr, UDamageType::StaticClass());
+					}
+				}, 1.0f, true);
 
-			GetWorld()->GetTimerManager().SetTimer(PlayerCharacter->PoisonDurationHandle, [PlayerCharacter]()
-			{
-				 if (IsValidChecked(PlayerCharacter))
-				 {
-					 PlayerCharacter->GetWorld()->GetTimerManager().ClearTimer(PlayerCharacter->PoisonTimerHandle);
-				 }
-			}, PoisonDuration, false);
+				World->GetTimerManager().SetTimer(PlayerCharacter->PoisonDurationHandle, [PlayerPtr, Duration]()
+				{
+					if (PlayerPtr.IsValid())
+					{
+						UWorld* PWorld = PlayerPtr->GetWorld();
+						if (PWorld)
+						{
+							PWorld->GetTimerManager().ClearTimer(PlayerPtr->PoisonTimerHandle);
+							PWorld->GetTimerManager().ClearTimer(PlayerPtr->PoisonDurationHandle);
+						}
+					}
+				}, Duration, false);
+			}
 		}
 	}
 
